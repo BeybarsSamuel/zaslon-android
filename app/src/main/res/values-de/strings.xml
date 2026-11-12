@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zaslon Browser</string>
+    <string name="shield_active">Zaslon-Schutz aktiv</string>
+    <string name="byedpi_service_title">Zaslon ByeDPI-Tunnel aktiv</string>
+    <string name="byedpi_service_desc">Lokaler TLS-ClientHello-Splitting- &amp; DPI-Umgehungstunnel läuft</string>
+    <string name="bg_media_title">Zaslon Hintergrundmedien</string>
+    <string name="bg_media_desc">Werbefreie Audiowiedergabe im Hintergrund bei ausgeschaltetem Bildschirm</string>
+    <string name="panic_complete">🔥 Panik-Löschung: Alle Tabs, Cookies und lokalen Spuren vernichtet</string>
+</resources>

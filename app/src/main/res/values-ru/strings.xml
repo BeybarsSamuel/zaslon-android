@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zaslon Browser</string>
+    <string name="shield_active">Щит Zaslon активен</string>
+    <string name="byedpi_service_title">Туннель Zaslon ByeDPI активен</string>
+    <string name="byedpi_service_desc">Работает локальный туннель фрагментации TLS ClientHello и обхода DPI</string>
+    <string name="bg_media_title">Фоновое медиа Zaslon</string>
+    <string name="bg_media_desc">Воспроизведение звука в фоне без рекламы при выключенном экране</string>
+    <string name="panic_complete">🔥 Экстренная очистка: все вкладки, cookie и локальные следы уничтожены</string>
+</resources>

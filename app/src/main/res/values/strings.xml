@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zaslon Browser</string>
+    <string name="shield_active">Zaslon Kalkanı Aktif</string>
+    <string name="byedpi_service_title">Zaslon ByeDPI Tüneli Aktif</string>
+    <string name="byedpi_service_desc">TLS ClientHello parçalama ve sansür aşma yerel tüneli çalışıyor</string>
+    <string name="bg_media_title">Zaslon Arka Plan Medya</string>
+    <string name="bg_media_desc">Ekran kapalıyken reklamsız ses oynatma aktif</string>
+    <string name="panic_complete">🔥 Panik Yakıcı: Tüm sekmeler, çerezler ve yerel izler imha edildi</string>
+</resources>

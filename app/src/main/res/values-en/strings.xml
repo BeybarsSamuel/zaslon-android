@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zaslon Browser</string>
+    <string name="shield_active">Zaslon Shield Active</string>
+    <string name="byedpi_service_title">Zaslon ByeDPI Tunnel Active</string>
+    <string name="byedpi_service_desc">Local TLS ClientHello splitting &amp; DPI bypass tunnel is running</string>
+    <string name="bg_media_title">Zaslon Background Media</string>
+    <string name="bg_media_desc">Ad-free background audio playback active with screen off</string>
+    <string name="panic_complete">🔥 Panic Burn: All tabs, cookies, and local traces destroyed</string>
+</resources>
