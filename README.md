@@ -1,42 +1,118 @@
-# 🛡️ Zaslon Browser Android (`zaslon-android` — Faz 6)
+# Zaslon Browser for Android
 
-**Mozilla GeckoView (Sıfır-Telemetri & Glean Sökülmüş)** çekirdeği, **Kotlin + Jetpack Compose** modern arayüzü, gömülü **ByeDPI** yerel paket parçalama tüneli, yerleşik **uBlock / Zaslon Shield** WebExtension motoru, **Arka Plan Ses Oynatma**, **SponsorBlock** ve masaüstü Zaslon ile **Bulutsuz LAN Wi-Fi Eşitleme** özelliklerine sahip zırhlı mobil tarayıcı.
+Zaslon Android is a hardened mobile browser built on Mozilla GeckoView, Kotlin, and Jetpack Compose. It is designed to provide high-assurance privacy, censorship circumvention, and local peer-to-peer synchronization with the desktop Zaslon Browser without cloud intermediaries.
 
----
-
-## 🏗️ Mimari ve Modüller
-
-1. **Çekirdek — Sıfır-Telemetri GeckoView (`engine/HardenedGeckoEngine.kt` & `assets/geckoview-config.yaml`)**
-   - Mozilla telemetri (`toolkit.telemetry.*`, `datareporting.*`, `browser.ping-centre.telemetry`), Glean, Normandy/Shield çalışmaları, CrashReporter ve Google SafeBrowsing (`browser.safebrowsing.*`) motor seviyesinde tamamen kapatılmıştır.
-   - **WebRTC Gerçek/Yerel IP Sızıntı Kilidi:** `media.peerconnection.ice.default_address_only: true` ve `no_host: true`.
-   - **İzole Sekme Konteynerleri:** `🛡️ Kişisel`, `🏦 Banka/İş`, `💬 Sosyal`, `🛒 Alışveriş`, `👻 Geçici (RAM-Only)` ve `🧅 Tor Zırhlı` konteynerleri her biri bağımsız `contextId` çerez/önbellek alanıyla çalışır.
-   - **3 Kademeli Güvenlik Seviyesi (Tor Security Slider):** Standart, Daha Güvenli ve Paranoyak (JS-Kapalı).
-
-2. **Koruma & Erişim — Gömülü ByeDPI + uBlock WebExtension (`network/` & `assets/extensions/zaslon-shield/`)**
-   - **`ByeDpiProxyEngine.kt` & `ByeDpiVpnService.kt`:** Root yetkisi gerektirmeden cihaz içinde `127.0.0.1:10808` üzerinde çalışan yerel SOCKS5 sunucusu ve Android `VpnService` tüneli. İlk TLS `ClientHello` paketini yakalayıp SNI uzantısından iki geçerli TLS kaydına (`TLS Record Split`) veya ayrı TCP segmentlerine (`TCP_NODELAY`) bölerek İSS DPI engellerini aşar.
-   - **Yerleşik `zaslon-shield` WebExtension (`manifest.json`, `background.js`, `content.js`):**
-     - Ağ seviyesinde reklam, izleyici ve telemetri engelleme (EasyList + EasyPrivacy + Türkçe reklam ağları).
-     - Genişletilmiş **ClearURLs** (`utm_*`, `fbclid`, `gclid`, `si`, `igshid`, `yclid` vb.) temizleyici.
-     - **Canlı İstek Denetçisi (Request Inspector):** Sitenin arka planda bağlandığı alan adlarını canlı listeler ve dokunarak engellemeye izin verir.
-
-3. **Medya & Eşitleme (`media/` & `storage/`)**
-   - **Ekran Kapalıyken Arka Plan Ses Oynatma (`BackgroundMediaService.kt` + `content.js`):** Page Visibility API kilidi (`document.hidden = false`) ve Android `mediaPlayback` Foreground Service (`WakeLock` + `WifiLock`) ile ekran kilitlendiğinde YouTube/video sesinin kesilmesini önler.
-   - **SponsorBlock (`SponsorBlockClient.kt` + `background.js`):** SHA-256 K-Anonimlik (4 karakter özet ön eki) ile YouTube videolarındaki sponsorlu bölümleri otomatik atlar.
-   - **0.25x – 4.0x Video Hız & Zorunlu PiP:** Tüm videoları `0.25x` ile `4.0x` arasında hızlandırma ve `disablePictureInPicture` engelini kaldırma.
-   - **AES-256-GCM Şifreli Yerel Kasa (`EncryptedMobileVault.kt`) + 🔥 Panik Yakıcı:** Yer imleri, geçmiş ve notlar donanım destekli `AndroidKeyStore` (`AES/GCM/NoPadding`, 256-bit) ile şifrelenir. Üst çubuktaki **🔥 Panik Butonu** tüm sekmeleri, çerezleri ve yerel kasayı kalıntısız imha eder.
-   - **Bulutsuz LAN Wi-Fi Eşitleme (`LanSyncClient.kt`):** Masaüstü `zaslon-browser/src/storage/lan-sync.js` (Port `49440` HTTP + Port `49441` UDP Broadcast + RFC 7914 `scrypt` & `AES-256-GCM` + 6 Haneli PIN) ile %100 uyumlu çift yönlü sekme, yer imi ve not aktarımı.
+All Mozilla telemetry, Glean SDK hooks, Normandy experiment frameworks, and Google SafeBrowsing services are completely removed or disabled at the engine level.
 
 ---
 
-## 🚀 Derleme ve APK Üretimi
+## Architecture and Core Modules
 
-1. **Android Studio ile Açma:**
-   - Android Studio (Ladybug / Koala veya üzeri, JDK 17/21) ile `zaslon-android` klasörünü açın.
-   - Gradle senkronizasyonu tamamlandıktan sonra **Run (`Shift+F10`)** veya **Build > Build Bundle(s) / APK(s) > Build APK(s)** seçeneğiyle APK üretin.
+### 1. Hardened GeckoView Engine (`engine/HardenedGeckoEngine.kt`)
 
-2. **Komut Satırından (CLI) Derleme:**
-   ```bash
-   cd zaslon-android
-   ./gradlew assembleDebug
-   # Çıktı: app/build/outputs/apk/debug/app-universal-debug.apk
-   ```
+The browser core runs an isolated GeckoView runtime configured through `assets/geckoview-config.yaml` and dynamic runtime prefs:
+
+- **Telemetry Stripped:** All Mozilla analytics (`toolkit.telemetry.*`, `datareporting.*`, `browser.ping-centre.*`) and crash reporters are disabled.
+- **WebRTC Leak Prevention:** Enforces `media.peerconnection.ice.default_address_only: true` and `no_host: true` to prevent real local or public IP leaks behind proxies.
+- **Isolated Tab Containers:** Supports Personal, Work, Social, Shopping, Ephemeral (RAM-only), and Tor Armored containers. Each container maps to an independent `contextId` cookie, cache, and storage boundary.
+- **Multi-Level Security:** Standard, Safer (disables JIT optimizations and OpenType SVG rendering), and Safest / Paranoid (disables JavaScript and non-essential media APIs).
+
+### 2. Built-in ByeDPI Tunnel (`network/ByeDpiProxyEngine.kt` & `network/ByeDpiVpnService.kt`)
+
+Zaslon includes an embedded ByeDPI engine that circumvents middlebox SNI filtering without requiring root privileges:
+
+- Operates as a local SOCKS5 proxy on `127.0.0.1:10808` or an Android `VpnService` tunnel.
+- Intercepts outbound TLS handshakes and fragments the initial TLS `ClientHello` packet across multiple TCP segments or TLS records (`TLS Record Split` and `TCP_NODELAY`).
+- Allows bypassing domain-based blocks and throttling imposed by ISP deep packet inspection equipment.
+
+### 3. Integrated WebExtension Shield (`assets/extensions/zaslon-shield/`)
+
+A built-in WebExtension provides network-level filtering and inspection:
+
+- **Ad and Tracker Blocking:** Sub-millisecond URL and cosmetic filtering based on curated lists.
+- **URL Sanitization:** Strips tracking query parameters (`utm_*`, `fbclid`, `gclid`, `si`, `igshid`, `yclid`) from links prior to navigation.
+- **Request Inspector:** Real-time visibility into third-party domains contacted by the active tab, with one-tap domain-blocking rules.
+
+### 4. Background Media and Usability (`media/`)
+
+- **Screen-Off Audio Playback:** Employs a Page Visibility API override (`document.hidden = false`) and an Android Foreground Service with audio focus locks (`WakeLock` and `WifiLock`) to prevent YouTube and web audio streams from pausing when the screen turns off.
+- **SponsorBlock Client:** Automatically skips sponsored segments in YouTube videos using 4-character SHA-256 k-anonymity, ensuring video IDs are never submitted in plaintext to any server.
+- **Video Playback Rate:** Global video playback speed adjustments (0.25x to 4.0x) and forced Picture-in-Picture.
+
+### 5. Encrypted Vault and Panic Trigger (`storage/EncryptedMobileVault.kt`)
+
+- **Hardware-Backed Encryption:** Bookmarks, history, and notes are encrypted at rest using AES-256-GCM backed by the `AndroidKeyStore`.
+- **Panic Action:** A single tap destroys active tabs, wipes memory caches, and securely shreds the local vault database without leaving persistent traces.
+
+### 6. Cloudless LAN Peer-to-Peer Sync (`storage/LanSyncClient.kt`)
+
+Zaslon Android communicates directly with Zaslon Browser on desktop over your local Wi-Fi:
+
+- Discovers desktop peers via UDP broadcast packets on port `49441`.
+- Synchronizes tabs, bookmarks, and notes over an encrypted HTTP endpoint on port `49440`.
+- Authentication uses a 6-digit one-time PIN and key derivation through `scrypt` and AES-256-GCM.
+- No third-party accounts, cloud servers, or external connections are involved.
+
+---
+
+## Project Structure
+
+```
+zaslon-android/
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/zaslon/browser/
+│   │   │   ├── engine/       # GeckoView engine initialization and preference wiring
+│   │   │   ├── media/        # Background audio service, SponsorBlock, media controls
+│   │   │   ├── network/      # ByeDPI engine, VPN service, SOCKS5 client
+│   │   │   ├── storage/      # AndroidKeyStore encrypted vault, LAN sync client
+│   │   │   └── ui/           # Jetpack Compose UI (tabs, toolbar, settings, drawers)
+│   │   └── assets/
+│   │       ├── geckoview-config.yaml  # Base engine configuration and privacy flags
+│   │       └── extensions/zaslon-shield/ # Built-in content blocking WebExtension
+│   └── build.gradle.kts
+└── build.gradle.kts
+```
+
+---
+
+## Building and Development
+
+### Prerequisites
+
+- Android Studio (Ladybug, Koala, or newer)
+- JDK 17 or JDK 21
+- Android SDK with API 34+ and NDK tools installed
+
+### Building from Android Studio
+
+1. Open the `zaslon-android` folder in Android Studio.
+2. Wait for Gradle to download dependencies and GeckoView artifacts.
+3. Select an emulator or physical device running Android 8.0 (API 26) or higher.
+4. Click **Run** (`Shift + F10`) or navigate to **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+
+### Building via Command Line (CLI)
+
+```bash
+cd zaslon-android
+./gradlew assembleDebug
+```
+
+The resulting debug APK will be located at:
+```
+app/build/outputs/apk/debug/app-universal-debug.apk
+```
+
+---
+
+## Security Guidelines
+
+- **No Telemetry:** Zaslon Android does not send diagnostics, crash logs, or telemetry to Mozilla, Google, or any central server.
+- **Fail-Closed by Design:** In Tor and VPN modes, connections will refuse to proceed if the proxy circuit is not established, preventing clearnet IP leakage.
+- **Local Isolation:** Storage, cookies, and network state remain strictly separated across tab containers.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
