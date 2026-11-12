@@ -210,12 +210,21 @@ class HardenedGeckoEngine(
         }
         val proxyType = if (proxyPort > 0) 1 else 0 // 1 = Manuel SOCKS5 Proxy
 
+        val trrMode = if (useStaticProxy) 0 else 3
         val dynamicPrefs = buildString {
             appendLine(baseYaml.trimEnd())
-            appendLine("  network.trr.mode: 3")
+            appendLine("  network.trr.mode: $trrMode")
             appendLine("  network.trr.uri: \"$dohProviderUrl\"")
             appendLine("  network.trr.bootstrapAddress: \"$bootstrapAddr\"")
+            appendLine("  network.trr.excluded-domains: \"onion\"")
             appendLine("  javascript.enabled: ${currentSecurityLevel != SecurityLevel.PARANOID}")
+            appendLine("  javascript.options.ion: ${currentSecurityLevel == SecurityLevel.STANDARD}")
+            appendLine("  javascript.options.baselinejit: ${currentSecurityLevel == SecurityLevel.STANDARD}")
+            appendLine("  javascript.options.wasm: ${currentSecurityLevel == SecurityLevel.STANDARD}")
+            appendLine("  javascript.options.asmjs: ${currentSecurityLevel == SecurityLevel.STANDARD}")
+            appendLine("  media.webaudio.enabled: ${currentSecurityLevel != SecurityLevel.PARANOID}")
+            appendLine("  svg.disabled: ${currentSecurityLevel == SecurityLevel.PARANOID}")
+            appendLine("  gfx.font_rendering.opentype_svg.enabled: ${currentSecurityLevel == SecurityLevel.STANDARD}")
             appendLine("  network.proxy.socks_remote_dns: true")
             appendLine("  network.proxy.type: $proxyType")
             if (proxyType == 1) {
@@ -459,6 +468,15 @@ class HardenedGeckoEngine(
             javaScriptEnabled = (level != SecurityLevel.PARANOID)
             webFontsEnabled = (level == SecurityLevel.STANDARD)
         }
+        try {
+            writeHardenedConfigFile(
+                byeDpiActive = byeDpiActive,
+                byeDpiPort = byeDpiPort,
+                torActive = torActive,
+                torPort = verifiedTorPort,
+                dohProviderUrl = currentDohProviderUrl
+            )
+        } catch (_: Exception) {}
     }
 
     /**
